@@ -6,24 +6,25 @@ PASTA_INPUT = 'input'
 PASTA_OUTPUT = 'output'
 NOME_FONTE = 'arial.ttf'
 
+
 def aplicar_marca_dagua():
     init(autoreset=True)
-    print(Style.BRIGHT + Fore.CYAN + f"--- APLICADOR DE MARCA D'ÁGUA ---")
+    print(Style.BRIGHT + Fore.CYAN + "--- APLICADOR DE MARCA D'ÁGUA ---")
 
-    texto_marca = input("Digite o texto da marca d'água: ").strip()
+    texto_marca = input("Digite o texto da sua marca d'água: ").strip()
     if not texto_marca:
-        print(Fore.RED + "O texto não pode estar vazio.")
+        print(Fore.RED + "O texto não pode ser vazio.")
         return
-    
+
     posicoes = {
         '1': 'canto_superior_esquerdo', '2': 'canto_superior_direito',
         '3': 'canto_inferior_esquerdo', '4': 'canto_inferior_direito',
         '5': 'centro'
     }
-    print("\nEscolha a posição em que a marca d'água irá ficar: ")
+    print("\nEscolha a posição da marca d'água:")
     for num, pos in posicoes.items():
         print(f"[{num}] {pos.replace('_', ' ').title()}")
-
+    
     while True:
         escolha_pos = input("Digite o número da posição: ")
         if escolha_pos in posicoes:
@@ -31,58 +32,61 @@ def aplicar_marca_dagua():
             break
         else:
             print(Fore.RED + "Opção inválida. Tente novamente.")
-        
+    
     while True:
         try:
-            angulo = int(input("Digite o ângulo de inclinação (Ex: 45 para diagonal, 0 para reto): "))
+            angulo = int(input("Digite o ângulo de inclinação (ex: 45 para diagonal, 0 para reto): "))
             break
         except ValueError:
             print(Fore.RED + "Por favor, digite um número inteiro para o ângulo.")
-
+            
     while True:
         try:
-            tamanho_fonte = int(input("Digite o tamanho da fonte: "))
+            tamanho_fonte = int(input("Digite o tamanho da fonte (ex: 36): "))
             break
         except ValueError:
-            print(Fore.RED + "Por favor, digite um número inteiro para o tamanho da fonte.")
+            print(Fore.RED + "Por favor, digite um número inteiro para o tamanho.")
 
     if not os.path.exists(PASTA_OUTPUT):
         os.makedirs(PASTA_OUTPUT)
-    
-    print(Fore.YELLOW + "\nProcessando...")
+
+    print(Fore.YELLOW + "\nProcessando imagens...")
     arquivos_processados = 0
     for nome_arquivo in os.listdir(PASTA_INPUT):
         caminho_arquivo_origem = os.path.join(PASTA_INPUT, nome_arquivo)
-
+        
         try:
             with Image.open(caminho_arquivo_origem).convert("RGBA") as imagem_base:
                 largura_img, altura_img = imagem_base.size
 
-                txt_canvas = Image.new('RGBA', (largura_img, altura_img), (255, 255, 255, 0))
-                
-                desenho = ImageDraw.Draw(txt_canvas)
                 try:
                     fonte = ImageFont.truetype(NOME_FONTE, tamanho_fonte)
                 except IOError:
                     fonte = ImageFont.load_default()
+                
+                largura_estimada = int(tamanho_fonte * len(texto_marca) * 1.2)
+                altura_estimada = int(tamanho_fonte * 2)
+                txt_canvas_temp = Image.new('RGBA', (largura_estimada, altura_estimada), (255, 255, 255, 0))
 
-                caixa_texto = desenho.textbbox((0, 0), texto_marca, font=fonte)
-                largura_txt = caixa_texto[2] - caixa_texto[0]
-                altura_txt = caixa_texto[3] - caixa_texto[1]
+                desenho_temp = ImageDraw.Draw(txt_canvas_temp)
+                desenho_temp.text((0, 0), texto_marca, font=fonte, fill=(255, 255, 255, 128))
 
-                pos_texto_inicial = ((largura_img - largura_txt) // 2, (altura_img - altura_txt) // 2)
-                desenho.text(pos_texto_inicial, texto_marca, font=fonte, fill=(255, 255, 255, 128))
+                caixa_real = txt_canvas_temp.getbbox()
+                if caixa_real:
+                    txt_canvas = txt_canvas_temp.crop(caixa_real)
+                else:
+                    txt_canvas = Image.new('RGBA', (1, 1), (255, 255, 255, 0))
 
                 if angulo != 0:
-                    txt_canvas = txt_canvas.rotate(angulo, expand=True)
+                    txt_canvas = txt_canvas.rotate(angulo, expand=True, fillcolor=(0,0,0,0))
 
                 margem = 10
                 if posicao_escolhida == 'canto_superior_esquerdo':
                     pos_final = (margem, margem)
                 elif posicao_escolhida == 'canto_superior_direito':
-                    pos_final = (largura_img - txt_canvas.width + margem, margem)
+                    pos_final = (largura_img - txt_canvas.width - margem, margem)
                 elif posicao_escolhida == 'canto_inferior_esquerdo':
-                    pos_final = (margem, altura_img - txt_canvas.height + margem)
+                    pos_final = (margem, altura_img - txt_canvas.height - margem)
                 elif posicao_escolhida == 'canto_inferior_direito':
                     pos_final = (largura_img - txt_canvas.width - margem, altura_img - txt_canvas.height - margem)
                 elif posicao_escolhida == 'centro':
@@ -91,7 +95,6 @@ def aplicar_marca_dagua():
                 imagem_base.paste(txt_canvas, pos_final, txt_canvas)
                 
                 imagem_final = imagem_base.convert("RGB")
-                
                 caminho_arquivo_destino = os.path.join(PASTA_OUTPUT, nome_arquivo)
                 imagem_final.save(caminho_arquivo_destino)
                 arquivos_processados += 1
