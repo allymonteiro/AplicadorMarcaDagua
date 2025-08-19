@@ -20,7 +20,7 @@ Um aplicativo de linha de comando feito em Python que aplica marcas d'água de t
 
 ## 🚀 Como Usar (Versão Executável para Windows)
 
-1. Vá para a **[Página de Releases](LINK_DA_SUA_RELEASE_AQUI)**.
+1. Vá para a **[Página de Releases](https://github.com/allymonteiro/AplicadorMarcaDagua/releases)**.
 2. Baixe o arquivo `marca.exe`.
 3. Coloque o `.exe` em uma pasta. Crie uma subpasta `input` ao lado dele e adicione suas imagens.
 4. Dê dois cliques no `.exe` para executar. As imagens com marca d'água aparecerão em uma nova pasta `output`.
